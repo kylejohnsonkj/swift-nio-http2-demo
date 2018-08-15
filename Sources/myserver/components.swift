@@ -13,6 +13,26 @@ import NIOHTTP2
 
 import Foundation
 
+// MARK: - Route
+let routes = [
+    Route(.GET, "/persons", PersonResource().get),
+    Route(.PUT, "/persons", PersonResource().create),
+    Route(.PATCH, "/persons", PersonResource().update),
+    Route(.DELETE, "/persons", PersonResource().delete)
+]
+
+struct Route {
+    let request: Request
+    let handler: (Request) -> Response
+}
+
+extension Route {
+    init(_ method: HTTPMethod, _ uri: String, _ handler: @escaping (Request) -> Response) {
+        self.request = Request(method: method, uri: uri, body: "")
+        self.handler = handler
+    }
+}
+
 // MARK: - Request
 struct Request {
     let method: HTTPMethod
@@ -44,26 +64,6 @@ func responseForCode(_ statusCode: HTTPResponseStatus) -> Response {
     return responseForCode(statusCode, "")
 }
 
-// MARK: - Route
-struct Route {
-    let request: Request
-    let handler: (Request) -> Response
-}
-
-extension Route {
-    init(_ method: HTTPMethod, _ uri: String, _ handler: @escaping (Request) -> Response) {
-        self.request = Request(method: method, uri: uri, body: "")
-        self.handler = handler
-    }
-}
-
-let routes = [
-    Route(.GET, "/persons", PersonResource().get),
-    Route(.PUT, "/persons", PersonResource().create),
-    Route(.PATCH, "/persons", PersonResource().update),
-    Route(.DELETE, "/persons", PersonResource().delete)
-]
-
 // MARK: - Headers
 let headerPlainText: HTTPHeaders = {
     var headers = HTTPHeaders()
@@ -88,6 +88,6 @@ struct User {
 }
 
 let authorizedUsers = [
-    User(user: "kyjohnson09@gmail.com", pass: "test")
+    User(user: "user", pass: "pass")
 ]
 

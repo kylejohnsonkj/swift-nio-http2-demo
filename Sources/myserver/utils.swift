@@ -94,7 +94,8 @@ func jsonResponseForValue<T: Codable>(_ value: T) -> Response {
     let encoder = JSONEncoder()
     encoder.outputFormatting = .prettyPrinted
     
-    guard let jsonData = try? encoder.encode(value), let json = String(data: jsonData, encoding: String.Encoding.utf8) else {
+    guard let jsonData = try? encoder.encode(value),
+        let json = String(data: jsonData, encoding: String.Encoding.utf8) else {
         return Response(statusCode: .internalServerError, headers: headerPlainText, body: "failed to encode data")
     }
     return Response(statusCode: .ok, headers: headerJson, body: json)

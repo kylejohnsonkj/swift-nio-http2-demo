@@ -41,7 +41,8 @@ final class HTTP1TestServer: ChannelInboundHandler {
                 let decodedData = Data(base64Encoded: base64Encoded),
                 let decodedAuth = String(data: decodedData, encoding: .utf8),
                 let _ = authorizedUsers.filter({ $0.auth == decodedAuth }).first else {
-                    sendResponse(ctx, response: responseForCode(.forbidden, "authentication failed"))
+                    // TODO: add www-auth... header
+                    sendResponse(ctx, response: responseForCode(.unauthorized, "authentication failed"))
                     return
             }
             

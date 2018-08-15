@@ -101,6 +101,7 @@ extension PersonResource {
         return Person(id: id, name: name, age: age)
     }
     
+    // TODO: use enum instead of magic numbers
     private func getIndexOfPerson(_ allObjects: [Person], _ matchingObjects: [Person]) -> Int {
         guard matchingObjects.count == 1,
             let person = matchingObjects.first,
