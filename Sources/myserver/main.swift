@@ -12,11 +12,9 @@ final class HTTP1TestServer: ChannelInboundHandler {
     public typealias InboundIn = HTTPServerRequestPart
     public typealias OutboundOut = HTTPServerResponsePart
     
-    var description: String?
-    var method: HTTPMethod?
-    var uri: String?
-    var version: HTTPVersion?
-    var headers: HTTPHeaders?
+    var method: HTTPMethod!
+    var uri: String!
+    var headers: HTTPHeaders!
     var body = ""
 
     public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
@@ -24,31 +22,39 @@ final class HTTP1TestServer: ChannelInboundHandler {
         switch self.unwrapInboundIn(data) {
             
         case .head(let request):
-            description = request.description
             method = request.method
             uri = request.uri
-            version = request.version
             headers = request.headers
 
         case .body(var buffer):
             let body = buffer.readString(length: buffer.readableBytes) ?? ""
-            self.body = body
+            self.body += body
             
         case .end( _):
             guard let method = self.method, let uri = self.uri else {
-                sendResponse(ctx, response: Response(statusCode: .badRequest, headers: plainTextHeader, body: "Server Error: unable to retrieve valid http method or uri"))
+                sendResponse(ctx, response: responseForCode(.badRequest, "unable to retrieve valid response"))
                 return
             }
             
+            // basic authentication
+            guard let base64Encoded = headers["authorization"].joined().components(separatedBy: .whitespaces).last,
+                let decodedData = Data(base64Encoded: base64Encoded),
+                let decodedAuth = String(data: decodedData, encoding: .utf8),
+                let _ = authorizedUsers.filter({ $0.auth == decodedAuth }).first else {
+                    sendResponse(ctx, response: responseForCode(.forbidden, "authentication failed"))
+                    return
+            }
+            
             let clientRequest = Request(method: method, uri: uri, body: body)
-
+            let path = clientRequest.uri
             let matchingRoutes = routes.filter {
-                String(clientRequest.uri.split(separator: "?").first ?? "") == $0.request.uri
+                String(path[..<path.index(path.startIndex, offsetBy: $0.request.uri.count)]) == $0.request.uri
                     && clientRequest.method == $0.request.method
             }
             
             guard matchingRoutes.count == 1, let route = matchingRoutes.first else {
-                matchingRoutes.count == 0 ? sendResponse(ctx, response: Response(statusCode: .notFound, headers: plainTextHeader, body: "Server Error: route not found")) : sendResponse(ctx, response: Response(statusCode: .internalServerError, headers: plainTextHeader, body: "Server Error: route inconclusive"))
+                matchingRoutes.count == 0 ? sendResponse(ctx, response: responseForCode(.notFound, "route not found"))
+                    : sendResponse(ctx, response: responseForCode(.internalServerError, "route inconclusive"))
                 return
             }
             
@@ -61,11 +67,14 @@ final class HTTP1TestServer: ChannelInboundHandler {
         ctx.channel.getOption(option: HTTP2StreamChannelOptions.streamID).then { (streamID) -> EventLoopFuture<Void> in
             var headers = response.headers
             headers.add(name: "content-length", value: "\(response.body.count)")
-            headers.add(name: "x-stream-id", value: String(streamID.networkStreamID!))
+            headers.add(name: "x-stream-id", value: "\(streamID.networkStreamID!)")
+            headers.add(name: "etag", value: md5(response.body))
             ctx.channel.write(self.wrapOutboundOut(HTTPServerResponsePart.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: response.statusCode, headers: headers))), promise: nil)
+            
             var buffer = ctx.channel.allocator.buffer(capacity: 12)
             buffer.write(string: response.body)
             ctx.channel.write(self.wrapOutboundOut(HTTPServerResponsePart.body(.byteBuffer(buffer))), promise: nil)
+            
             return ctx.channel.writeAndFlush(self.wrapOutboundOut(HTTPServerResponsePart.end(nil)))
         }.whenComplete {
             ctx.close(promise: nil)
@@ -153,3 +162,4 @@ print("Server started and listening on \(channel.localAddress!), htdocs path \(h
 try channel.closeFuture.wait()
 
 print("Server closed")
+

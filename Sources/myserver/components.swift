@@ -1,4 +1,6 @@
 //
+//  API structure (Request, Response, Route) along with preset headers and user database.
+//
 //  components.swift
 //  myserver
 //
@@ -11,6 +13,7 @@ import NIOHTTP2
 
 import Foundation
 
+// MARK: - Request
 struct Request {
     let method: HTTPMethod
     let uri: String
@@ -23,16 +26,25 @@ extension Request: Equatable {
     }
 }
 
+// MARK: - Response
 struct Response {
     let statusCode: HTTPResponseStatus
     let headers: HTTPHeaders
     let body: String
 }
 
-func responseForError(_ message: String) -> Response {
-    return Response(statusCode: .internalServerError, headers: plainTextHeader, body: message)
+func responseForCode(_ statusCode: HTTPResponseStatus, _ message: String) -> Response {
+    guard !message.isEmpty else {
+        return Response(statusCode: statusCode, headers: headerPlainText, body: "")
+    }
+    return Response(statusCode: statusCode, headers: headerPlainText, body: "\(statusCode.reasonPhrase): \(message)")
 }
 
+func responseForCode(_ statusCode: HTTPResponseStatus) -> Response {
+    return responseForCode(statusCode, "")
+}
+
+// MARK: - Route
 struct Route {
     let request: Request
     let handler: (Request) -> Response
@@ -46,9 +58,36 @@ extension Route {
 }
 
 let routes = [
-//    Route(request: Request(method: .GET, uri: "/person", body: ""), handler: PersonResource().get),
-//    Route(request: Request(method: .PUT, uri: "/person", body: ""), handler: PersonResource().create)
-//    Route(.PUT, "/person", PersonResource().create)
-    Route(.GET, "/person", PersonResource().get), Route(.PUT, "/person", PersonResource().create),
-
+    Route(.GET, "/persons", PersonResource().get),
+    Route(.PUT, "/persons", PersonResource().create),
+    Route(.PATCH, "/persons", PersonResource().update),
+    Route(.DELETE, "/persons", PersonResource().delete)
 ]
+
+// MARK: - Headers
+let headerPlainText: HTTPHeaders = {
+    var headers = HTTPHeaders()
+    headers.add(name: "content-type", value: "text/plain")
+    return headers
+}()
+
+let headerJson: HTTPHeaders = {
+    var headers = HTTPHeaders()
+    headers.add(name: "content-type", value: "application/json")
+    return headers
+}()
+
+// MARK: - Auth
+struct User {
+    let user: String
+    let pass: String
+    
+    var auth: String {
+        return "\(user):\(pass)"
+    }
+}
+
+let authorizedUsers = [
+    User(user: "kyjohnson09@gmail.com", pass: "test")
+]
+
