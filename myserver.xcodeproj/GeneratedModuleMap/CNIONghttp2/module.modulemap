@@ -1,0 +1,4 @@
+module CNIONghttp2 {
+    umbrella "/Users/kjohnson/repos/myserver/.build/checkouts/swift-nio-http2.git--6850420191585752407/Sources/CNIONghttp2/include"
+    export *
+}
