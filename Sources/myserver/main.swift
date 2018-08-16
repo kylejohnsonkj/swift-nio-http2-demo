@@ -1,5 +1,5 @@
 // This example server currently does not know how to negotiate HTTP/2. That will come in a future enhancement. For now, you can
-// hit it with curl like so: curl --http2-prior-knowledge http://localhost:8888/
+// hit it with curl like so: curl -vu 'user:pass' --http2-prior-knowledge http://localhost:8889/
 
 import NIO
 import NIOHTTP1
@@ -47,6 +47,13 @@ final class HTTP1TestServer: ChannelInboundHandler {
             
             let clientRequest = Request(method: method, uri: uri, body: body)
             let path = clientRequest.uri
+            
+            // handle root path
+            guard path != "/" else {
+                sendResponse(ctx, response: responseForCode(.ok, "congrats, you got it working!"))
+                return
+            }
+            
             let matchingRoutes = routes.filter {
                 String(path[..<path.index(path.startIndex, offsetBy: $0.request.uri.count)]) == $0.request.uri
                     && clientRequest.method == $0.request.method
@@ -89,7 +96,7 @@ let arg2 = arguments.dropFirst().dropFirst().first
 let arg3 = arguments.dropFirst().dropFirst().dropFirst().first
 
 let defaultHost = "::1"
-let defaultPort: Int = 8888
+let defaultPort: Int = 8889
 let defaultHtdocs = "/dev/null/"
 
 enum BindTo {
