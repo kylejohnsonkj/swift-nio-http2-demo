@@ -54,7 +54,7 @@ struct PersonResource {
         // ensure we have a single match
         let index = getIndexOfPerson(allObjects, matchingObjects)
         guard index >= 0 else {
-            return index == -1 ? responseForCode(.notFound, "match not found") : responseForCode(.badRequest, "match inconclusive")
+            return index == IndexError.noMatches.rawValue ? responseForCode(.notFound, "match not found") : responseForCode(.badRequest, "match inconclusive")
         }
         
         // update person with properties from request (ignoring id changes)
@@ -78,7 +78,7 @@ struct PersonResource {
         // ensure we have a single match
         let index = getIndexOfPerson(allObjects, matchingObjects)
         guard index >= 0 else {
-            return index == -1 ? responseForCode(.notFound, "match not found") : responseForCode(.badRequest, "match inconclusive")
+            return index == IndexError.noMatches.rawValue ? responseForCode(.notFound, "match not found") : responseForCode(.badRequest, "match inconclusive")
         }
         
         // remove object from storage
@@ -91,6 +91,7 @@ struct PersonResource {
 
 // MARK: - Helpers
 extension PersonResource {
+    
     private func createPerson(from json: String) -> Person? {
         let properties = convertJsonToDict(json: json)
         let id = getLatestId(forKey: "persons")
@@ -101,12 +102,16 @@ extension PersonResource {
         return Person(id: id, name: name, age: age)
     }
     
-    // TODO: use enum instead of magic numbers
+    private enum IndexError: Int {
+        case noMatches = -1
+        case multipleMatches = -2
+    }
+    
     private func getIndexOfPerson(_ allObjects: [Person], _ matchingObjects: [Person]) -> Int {
         guard matchingObjects.count == 1,
             let person = matchingObjects.first,
             let index = allObjects.index(of: person) else {
-                return matchingObjects.count == 0 ? -1: -2
+                return matchingObjects.count == 0 ? IndexError.noMatches.rawValue : IndexError.multipleMatches.rawValue
         }
         return index
     }

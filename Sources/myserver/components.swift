@@ -77,6 +77,13 @@ let headerJson: HTTPHeaders = {
     return headers
 }()
 
+let headerUnauthorized: HTTPHeaders = {
+    var headers = HTTPHeaders()
+    headers.add(name: "content-type", value: "text/plain")
+    headers.add(name: "www-authenticate", value: "basic")
+    return headers
+}()
+
 // MARK: - Auth
 struct User {
     let user: String
