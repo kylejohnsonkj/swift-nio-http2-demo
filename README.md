@@ -23,13 +23,13 @@ $ swift run myserver localhost 8889
 ---
 ## Documentation
 
-### Communicating With The Server
+### Using cURL
 At the present time, swift-nio-http2 does not know how to negotiate HTTP/2. You must hit it with curl like so: 
 ```sh
 curl --http2-prior-knowledge http://localhost:8889/
 ```
 
-*Note:* I've turned on verbose mode (-v) for the remainder of this demo. Basic authentication is also included. Therefore, all commands must include valid user credentials (-u), amending the above command to the following.
+Note: I've turned on verbose mode (-v) for the remainder of this demo. Basic authentication is also included. Therefore, all commands must include valid user credentials (-u), amending the above command to the following.
 ```sh
 curl -vu 'user:pass' --http2-prior-knowledge http://localhost:8889/
 ```
@@ -63,11 +63,11 @@ curl -vu 'user:pass' --http2-prior-knowledge http://localhost:8889/persons/0 --d
 ```
 All properties can be modified via JSON, with the exception of id, which is immutable.
 
-*Note:* Only one resource can be updated per request. Resource count can be limited by querying or by supplying an object record (the id tagged on like so: /persons/**{id}**)
+Note: Only one resource can be updated per request. Resource count can be limited by querying or by supplying an object record like so: **/persons/{id}**
 
 ---
 ### DELETE (delete)
 ```sh
 curl -vu 'user:pass' --http2-prior-knowledge http://localhost:8889/persons/0 -XDELETE
 ```
-*Note:* Similarly to PATCH, only one resource can be deleted per request.
+Note: Similarly to PATCH, only one resource can be deleted per request.
