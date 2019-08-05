@@ -118,8 +118,10 @@ func setValue<T: Codable>(_ objects: T, forKey key: String) {
 
 func getLatestId(forKey key: String) -> Int {
     let id = UserDefaults.standard.integer(forKey: "\(key)-id")
-    let nextId = id + 1
-    UserDefaults.standard.set(nextId, forKey: "\(key)-id")
+    UserDefaults.standard.set(id + 1, forKey: "\(key)-id")
     return id
 }
 
+func resetIdCount(forKey key: String) {
+    UserDefaults.standard.set(0, forKey: "\(key)-id")
+}

@@ -93,8 +93,3 @@ struct User {
         return "\(user):\(pass)"
     }
 }
-
-let authorizedUsers = [
-    User(user: "user", pass: "pass")
-]
-

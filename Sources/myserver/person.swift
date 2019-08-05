@@ -16,9 +16,8 @@ struct Person: Codable {
 }
 
 extension Person: Equatable {
-    // id is not checked as it is always unique
     static func ==(lhs: Person, rhs: Person) -> Bool {
-        return lhs.name == rhs.name && lhs.age == rhs.age
+        return lhs.id == rhs.id && lhs.name == rhs.name && lhs.age == rhs.age
     }
 }
 
@@ -37,14 +36,9 @@ struct PersonResource {
             return responseForCode(.badRequest, "failed to interpret json as person")
         }
         var objects: [Person] = getAllObjects(forKey: "persons")
-        
-        // ensure object doesn't exist already
-        guard !objects.contains(object) else {
-            return responseForCode(.conflict, "person already exists")
-        }
         objects.append(object)
         setValue(objects, forKey: "persons")
-        return responseForCode(.ok, "person successfully created")
+        return responseForCode(.ok, "person created")
     }
     
     // MARK: PATCH
@@ -68,24 +62,28 @@ struct PersonResource {
         var updatedObjects = allObjects
         updatedObjects[index] = updatedObject
         setValue(updatedObjects, forKey: "persons")
-        return responseForCode(.ok, "person successfully updated")
+        return responseForCode(.ok, "person updated")
     }
     
     // MARK: DELETE
     func delete(request: Request) -> Response {
         let (allObjects, matchingObjects): ([Person], [Person]) = getObjectsForRequest(request: request, key: "persons")
         
-        // ensure we have a single match
+        // ensure we're matching one or all
         let index = getIndexOfPerson(allObjects, matchingObjects)
-        guard index >= 0 else {
-            return index == IndexError.noMatches.rawValue ? responseForCode(.notFound, "match not found") : responseForCode(.badRequest, "match inconclusive")
+        if index == IndexError.noMatches.rawValue {
+            return responseForCode(.notFound, "match not found")
+        } else if allObjects.count > 1, matchingObjects == allObjects {
+            resetIdCount(forKey: "persons")
+            setValue([Person](), forKey: "persons")
+            return responseForCode(.ok, "db reset")
         }
         
         // remove object from storage
         var remainingObjects = allObjects
         remainingObjects.remove(at: index)
         setValue(remainingObjects, forKey: "persons")
-        return responseForCode(.ok, "person successfully deleted")
+        return responseForCode(.ok, "person deleted")
     }
 }
 
@@ -110,10 +108,9 @@ extension PersonResource {
     private func getIndexOfPerson(_ allObjects: [Person], _ matchingObjects: [Person]) -> Int {
         guard matchingObjects.count == 1,
             let person = matchingObjects.first,
-            let index = allObjects.index(of: person) else {
+            let index = allObjects.firstIndex(of: person) else {
                 return matchingObjects.count == 0 ? IndexError.noMatches.rawValue : IndexError.multipleMatches.rawValue
         }
         return index
     }
 }
-
